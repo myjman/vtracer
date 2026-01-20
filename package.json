@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "cp node_modules/vtracer-wasm/vtracer.wasm node_modules/vtracer-wasm/vtracer_bg.wasm 2>/dev/null || true"
   },
   "dependencies": {
     "next": "16.1.4",
