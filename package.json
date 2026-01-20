@@ -6,14 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "postinstall": "cp node_modules/vtracer-wasm/vtracer.wasm node_modules/vtracer-wasm/vtracer_bg.wasm 2>/dev/null || true"
+    "lint": "eslint"
   },
   "dependencies": {
+    "imagetracerjs": "^1.2.6",
     "next": "16.1.4",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "vtracer-wasm": "^0.1.0"
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

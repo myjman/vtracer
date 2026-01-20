@@ -1,48 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-let vtracerModule: any = null;
 
-const VTRACER_CONFIG = {
-  colormode: 'color',
-  hierarchical: 'stacked',
-  mode: 'spline',
-  filter_speckle: 4,
-  color_precision: 8,
-  layer_difference: 16,
-  corner_threshold: 60,
-  length_threshold: 4.0,
-  max_iterations: 10,
-  splice_threshold: 45,
-  path_precision: 3
+const TRACER_CONFIG = {
+  // Color quantization
+  colorsampling: 2,      // 0: simple, 1: random, 2: deterministic
+  numberofcolors: 24,    // Number of colors to use
+  mincolorratio: 0.02,   // Color ratio below this will be merged
+  colorquantcycles: 3,   // Color quantization cycles
+
+  // Tracing
+  ltres: 1,              // Line tracer error threshold
+  qtres: 1,              // Quadratic spline error threshold
+  pathomit: 8,           // Edge node count below this will be omitted
+  rightangleenhance: true,
+
+  // Blur preprocessing
+  blurradius: 0,
+  blurdelta: 20,
+
+  // SVG output
+  scale: 1,
+  roundcoords: 2,        // Decimal places
+  strokewidth: 1,
+  linefilter: false,
+  desc: false,           // Don't add description
 };
 
-async function initVtracer(): Promise<any> {
-  if (vtracerModule) return vtracerModule;
-
-  const vtracer = await import('vtracer-wasm');
-  await vtracer.default('/vtracer.wasm');
-  vtracerModule = vtracer;
-  return vtracerModule;
-}
-
 export async function convertPngToSvg(imageFile: File): Promise<string> {
-  const vtracer = await initVtracer();
-
+  const ImageTracer = (await import('imagetracerjs')).default;
   const imageData = await getImageData(imageFile);
-  const svgString = vtracer.to_svg(
-    imageData.pixels,
-    imageData.width,
-    imageData.height,
-    VTRACER_CONFIG
-  );
+
+  const svgString = ImageTracer.imagedataToSVG(imageData, TRACER_CONFIG);
 
   return svgString;
 }
 
-async function getImageData(file: File): Promise<{
-  pixels: Uint8Array;
-  width: number;
-  height: number;
-}> {
+async function getImageData(file: File): Promise<ImageData> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -59,16 +51,16 @@ async function getImageData(file: File): Promise<{
         return;
       }
 
+      // Fill with white background to handle transparency
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, img.width, img.height);
       ctx.drawImage(img, 0, 0);
+
       const imageData = ctx.getImageData(0, 0, img.width, img.height);
 
       URL.revokeObjectURL(url);
 
-      resolve({
-        pixels: new Uint8Array(imageData.data),
-        width: img.width,
-        height: img.height
-      });
+      resolve(imageData);
     };
 
     img.onerror = () => {
@@ -81,18 +73,6 @@ async function getImageData(file: File): Promise<{
 }
 
 export function isWasmSupported(): boolean {
-  try {
-    if (typeof WebAssembly === 'object' &&
-        typeof WebAssembly.instantiate === 'function') {
-      const module = new WebAssembly.Module(
-        Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
-      );
-      if (module instanceof WebAssembly.Module) {
-        return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
-      }
-    }
-  } catch {
-    // WASM not supported
-  }
-  return false;
+  // No longer need WASM check since imagetracerjs is pure JavaScript
+  return true;
 }
